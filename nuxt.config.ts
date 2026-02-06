@@ -33,6 +33,11 @@ export default defineNuxtConfig({
 			proxy: "https://moodle-app2.let.ethz.ch/calendar/export_execute.php",
 		},
 	},
+	nitro: {
+		prerender: {
+			autoSubfolderIndex: false,
+		},
+	},
 
 	compatibilityDate: "2025-01-15",
 });
