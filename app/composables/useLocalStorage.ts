@@ -27,6 +27,7 @@ export const coursesStorage = useStorage<{
 			links: {
 				moodle: "https://moodle-app2.let.ethz.ch/course/view.php?id=26165",
 				examRepo: "https://exams.vis.ethz.ch/category/LineareAlgebra",
+				test: "abc",
 			},
 		},
 	},

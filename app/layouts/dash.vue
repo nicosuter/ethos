@@ -48,7 +48,7 @@ const items: NavigationMenuItem[] = [
       </NuxtLink>
       <UNavigationMenu :items="items" orientation="vertical"/>
     </UDashboardSidebar>
-    <div class="w-full p-6">
+    <div class="w-full p-6 pb-24 overflow-auto max-h-[calc(100vh-4rem)]">
       <slot/>
     </div>
   </UDashboardGroup>

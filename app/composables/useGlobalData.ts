@@ -26,83 +26,14 @@ export type EventItem = {
 	date: string; // ISO date string
 	type: string;
 	location?: string;
+	category?: string; // optional category from ICS (e.g., course code)
 };
 
 type FetcherResult = { courses?: CourseDTO[]; events?: EventItem[] };
 
 function createGlobalData() {
-	const mode = ref<"mock" | "live">("mock");
 	const courses: Ref<CourseDTO[]> = ref([]);
 	const events: Ref<EventItem[]> = ref([]);
-	const liveFetcher = ref<null | (() => Promise<FetcherResult>)>(null);
-
-	const mockData: FetcherResult = {
-		events: [
-			{
-				id: "e-1",
-				courseId: "eth-101",
-				title: "Lecture 1: Foundations",
-				date: new Date().toISOString(),
-				type: "lecture",
-				location: "Room 101",
-			},
-			{
-				id: "e-2",
-				courseId: "math-201",
-				title: "Homework 1 Due",
-				date: new Date(Date.now() + 86400000).toISOString(),
-				type: "deadline",
-				location: "Online",
-			},
-			{
-				id: "e-3",
-				courseId: "cs-301",
-				title: "Lab: Sorting",
-				date: new Date(Date.now() + 2 * 86400000).toISOString(),
-				type: "lab",
-				location: "Lab B",
-			},
-		],
-	};
-
-	async function fetchData() {
-		if (mode.value === "mock") {
-			courses.value = mockData.courses ?? [];
-			events.value = mockData.events ?? [];
-			return;
-		}
-
-		if (!liveFetcher.value) {
-			console.warn(
-				"[useGlobalData] live mode but no liveFetcher registered — falling back to mock",
-			);
-			courses.value = mockData.courses ?? [];
-			events.value = mockData.events ?? [];
-			return;
-		}
-
-		try {
-			const res = await liveFetcher.value();
-			courses.value = res.courses ?? [];
-			events.value = res.events ?? [];
-		} catch (err) {
-			console.error(
-				"[useGlobalData] live fetcher failed, falling back to mock",
-				err,
-			);
-			courses.value = mockData.courses ?? [];
-			events.value = mockData.events ?? [];
-		}
-	}
-
-	function setLiveFetcher(fn: () => Promise<FetcherResult>) {
-		liveFetcher.value = fn;
-	}
-
-	async function setMode(m: "mock" | "live") {
-		mode.value = m;
-		await fetchData();
-	}
 
 	function getCourseById(id: string) {
 		return courses.value.find((c) => c.id === id) ?? null;
@@ -125,16 +56,9 @@ function createGlobalData() {
 		return newCourse;
 	}
 
-	// initial populate
-	void fetchData();
-
 	return {
-		mode: readonly(mode),
 		courses,
 		events,
-		setLiveFetcher,
-		setMode,
-		fetchData,
 		getCourseById,
 		getEventsForCourse,
 		addCourse,

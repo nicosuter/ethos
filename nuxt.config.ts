@@ -29,6 +29,9 @@ export default defineNuxtConfig({
 		"/": { prerender: true },
 		"/dash/**": { ssr: false, appLayout: "dash" },
 		"/vvzProxy/**": { proxy: "https://vvzapi.ch/**" },
+		"/moodleCalProxy/export_execute.php": {
+			proxy: "https://moodle-app2.let.ethz.ch/calendar/export_execute.php",
+		},
 	},
 
 	compatibilityDate: "2025-01-15",
