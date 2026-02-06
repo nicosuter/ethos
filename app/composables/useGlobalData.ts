@@ -8,10 +8,14 @@ export type Lecturer = {
 
 export type CourseDTO = {
 	id: string;
+
 	code?: string;
+	semester?: string;
+
 	title: string;
 	description?: string;
 	lecturers?: Lecturer[];
+
 	links?: Record<string, string>;
 };
 

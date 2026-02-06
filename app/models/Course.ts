@@ -5,7 +5,7 @@ import { useVvzApi } from "~/composables/useVvzApi";
  * Lightweight CourseModel that wraps a serializable Course DTO and
  * provides behavior (lazy lecturer loading, caching).
  */
-export class Course {
+export class Course implements CourseDTO {
 	private readonly dto: CourseDTO;
 	private api: ReturnType<typeof useVvzApi>;
 	private lecturersCache: Lecturer[] | null = null;
@@ -35,8 +35,16 @@ export class Course {
 	/**
 	 * Returns any lecturers present in the DTO synchronously (may be undefined)
 	 */
-	get lecturersSync(): Lecturer[] | undefined {
+	get lecturers(): Lecturer[] | undefined {
 		return this.dto.lecturers;
+	}
+
+	get semester() {
+		return this.dto.semester;
+	}
+
+	get code() {
+		return this.dto.code;
 	}
 
 	/**

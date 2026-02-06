@@ -1,7 +1,7 @@
 import { useStorage } from "@vueuse/core";
 
 export const coursesStorage = useStorage<{
-	courses: Record<string, Omit<Course, "id">>;
+	courses: Record<string, Omit<CourseDTO, "id">>;
 }>("courses", {
 	courses: {
 		"eth-101": {

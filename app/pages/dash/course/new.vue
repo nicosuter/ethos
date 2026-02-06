@@ -1,15 +1,57 @@
 <script setup lang="ts">
+import { useCourseSearch } from "~/composables/useCourseSearch";
+import type { InputMenuItem } from "#ui/components/InputMenu.vue";
+import { parseVVZUnit } from "~/utils/parseVvzUnit";
+import { Course, createCourse } from "~/models/Course";
+
+const s = useCourseSearch();
 const router = useRouter();
-const { search } = useCourseSearch();
-const { fetchCourseModel, fetchLecturersByUnitId } = useVvzApi();
+const { fetchCourseModel } = useVvzApi();
+
+const selectedCourse = ref<Course | null>(null);
+const selectedLabel = ref();
+const searchTerm = ref("");
+const itemLabels = ref<InputMenuItem[] | undefined>();
+const itemValues = ref<Record<string, CourseDTO> | undefined>();
+
+watch(selectedLabel, (val) => {
+	if (val && itemValues.value) {
+		selectedCourse.value = itemValues.value[val]
+			? createCourse(itemValues.value[val])
+			: null;
+		selectedCourse.value?.getLecturers();
+	} else {
+		selectedCourse.value = null;
+	}
+});
+
+watch(searchTerm, async (val) => {
+	const r = await s.search(val);
+	if (r) {
+		itemLabels.value = Object.values(r).map((course) => ({
+			label: course.units[0]?.title
+				? `${course.units[0]?.title} (${course.units[0].semkez}, ${course.units[0].number}/${course.units[0].id})`
+				: undefined,
+		}));
+		const newLabels: InputMenuItem[] = [];
+		const newValues: Record<string, CourseDTO> = {};
+		for (const course of Object.values(r)) {
+			if (course.units.length === 0 || !course.units[0]) continue;
+			const cur = course.units[0];
+			const title = `${cur.title} (${cur.semkez}, ${cur.number})`;
+			newLabels.push(title);
+			newValues[title] = parseVVZUnit(cur);
+		}
+		itemLabels.value = newLabels;
+		itemValues.value = newValues;
+	}
+});
 
 const form = ref({
 	id: null as null | string | number,
 	title: "",
 	description: "",
 });
-
-const selectedCourse = ref<CourseDTO | null>(null);
 
 watch(selectedCourse, (val) => {
 	if (val?.id) {
@@ -25,12 +67,11 @@ watch(
 	async (newId: string | number | null) => {
 		if (!newId) return;
 
-		// Cast unit_id to number as required by the API
 		const unitId = Number(newId);
 		if (Number.isNaN(unitId)) return;
 
 		// If the ID matches what we already selected, don't re-fetch
-		if (selectedCourse.value?.id === unitId) return;
+		if (selectedCourse.value?.id === unitId.toString()) return;
 
 		try {
 			const course = await fetchCourseModel(unitId);
@@ -41,13 +82,7 @@ watch(
 
 			if (course.title) {
 				form.value.title = course.title ?? course.title;
-				selectedCourse.value = {
-					...course.toDTO(),
-					id: unitId,
-					title: course.title,
-					description: course.description,
-					lecturers: await course.getLecturers(),
-				};
+				selectedCourse.value = course;
 			}
 		} catch (e) {
 			console.error("Failed to fetch course data", e);
@@ -70,9 +105,8 @@ async function handleSubmit() {
 	const next = {
 		...existing,
 		[id]: {
-			...selectedCourse.value,
+			...selectedCourse.value?.toDTO(),
 			title: title,
-			description: selectedCourse.value?.description,
 		},
 	};
 	coursesStorage.value = { ...(coursesStorage.value ?? {}), courses: next };
@@ -92,7 +126,7 @@ async function handleSubmit() {
           Loading course data...
         </div>
         <div v-else>
-          <div class="font-medium text-white">{{ selectedCourse.title }}</div>
+          <div class="font-medium text-white">{{ selectedCourse.title }} <span v-if="selectedCourse.semester">({{ selectedCourse.semester }})</span></div>
           <div v-if="selectedCourse.lecturers" class="text-zinc-400 mt-1">
           <span v-for="(l, i) in selectedCourse.lecturers" :key="i">
             {{ l.firstname }} {{ l.lastname.toUpperCase() }}<span v-if="i < selectedCourse.lecturers.length - 1">, </span>
@@ -125,18 +159,17 @@ async function handleSubmit() {
 
       <div class="space-y-1">
         <label class="block text-sm font-medium text-gray-300">Title</label>
-        <UInputMenu
-          v-model="selectedCourse"
-          v-model:query="form.title"
-          :search="search"
+        <UInputMenu class="w-full"
+          v-model="selectedLabel"
+          :items="itemLabels"
+          v-model:search-term="searchTerm"
           option-attribute="title"
           placeholder="Diskrete Mathematik"
-          :disabled="!!form.id"
           :required="!form.id"
-          trailing
         >
           <template #empty="{ searchTerm }">
-            &quot;{{ searchTerm }}&quot; not found
+            <span v-if="(searchTerm?.length ?? 0) > 4">&quot;{{ searchTerm }}&quot; not found</span>
+            <span v-else>Type at least 5 characters to search</span>
           </template>
         </UInputMenu>
       </div>

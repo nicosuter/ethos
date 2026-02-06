@@ -1,18 +1,27 @@
-export const useCourseSearch = () => {
-	const search = async (q: string) => {
-		if (q.length <= 4) return [];
+import {
+	isSearchSuccessResponse,
+	type SearchResponse,
+	type SearchSuccessResponse,
+} from "~~/schema/vvz";
+
+export function useCourseSearch() {
+	async function search(
+		term: string,
+	): Promise<SearchSuccessResponse["results"] | null> {
+		if (term.length <= 4) return null;
 
 		try {
-			const data = await $fetch<any[]>("/vvzProxy/api/v2/search", {
-				query: { q },
+			const data = await $fetch<SearchResponse>("/vvzProxy/api/v2/search", {
+				query: { q: term },
 			});
-			console.log(data);
-			return data || [];
+			if (!isSearchSuccessResponse(data))
+				throw new Error(`API validation error: ${JSON.stringify(data)}`);
+			return data.results;
 		} catch (err) {
 			console.error("Course search failed", err);
-			return [];
+			return null;
 		}
-	};
+	}
 
 	return { search };
-};
+}

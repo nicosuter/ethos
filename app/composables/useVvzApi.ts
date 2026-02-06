@@ -1,9 +1,10 @@
 import type { CourseDTO, Lecturer } from "~/composables/useGlobalData";
 import { createCourse } from "~/models/Course";
-import type {
-	LecturerProfileResponse,
-	UnitLecturersResponse,
-	UnitResponse,
+import {
+	isUnitSuccessResponse,
+	type LecturerProfileResponse,
+	type UnitLecturersResponse,
+	type UnitResponse,
 } from "~~/schema/vvz";
 
 export function useVvzApi() {
@@ -12,9 +13,16 @@ export function useVvzApi() {
 			const data = await $fetch<UnitResponse>(
 				`/vvzProxy/api/v1/unit/${unitId}/get`,
 			);
-			// Handle potential array or single object response
-			const courseData = Array.isArray(data) ? data[0] : data;
-			return (courseData as CourseDTO) || null;
+			if (!isUnitSuccessResponse(data)) return null;
+			return data
+				? ({
+						...data,
+						id: data.id.toString(),
+						code: data.number,
+						description: data.abstract_english ?? data.abstract,
+						semester: data.semkez,
+					} as CourseDTO)
+				: null;
 		} catch (e) {
 			console.error("Failed to fetch course data", e);
 			return null;
