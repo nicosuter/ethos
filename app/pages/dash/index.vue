@@ -61,9 +61,9 @@ function saveAndFetch() {
         <h2 class="text-xl font-semibold mb-3">Upcoming Events</h2>
 
         <UCard v-if="!icsUrl || icsUrl === ''">
-          <p class="text-sm">No calendar configured. If you use Moodle, you can paste your personal calendar (ICS) URL here so events appear on your dashboard.</p>
+          <p class="text-sm">No calendar configured. If you use Moodle, you can paste your personal calendar URL here so events appear on your dashboard.</p>
           <div class="mt-3 flex gap-2">
-            <UInput v-model="inputIcs" placeholder="https://your.moodle/.../calendar.ics" class="w-full"/>
+            <UInput v-model="inputIcs" placeholder="https://moodle-app2.let.ethz.ch/calendar/export_execute.php?userid=..." class="w-full"/>
             <UButton @click="saveAndFetch">Save</UButton>
           </div>
         </UCard>
@@ -71,7 +71,7 @@ function saveAndFetch() {
         <UCard v-if="loading">Loading calendar…</UCard>
         <UCard v-if="error" class="text-red-400">{{ error }}</UCard>
 
-        <UCard v-if="!loading && (!sortedEvents || sortedEvents.length === 0)">No upcoming events</UCard>
+        <UCard v-if="!loading && icsUrl && icsUrl.length > 0 && (!sortedEvents || sortedEvents.length === 0)">No upcoming events</UCard>
 
         <div v-else class="space-y-3">
           <UCard v-for="e in sortedEvents" :key="e.id" class="flex justify-between items-start">
