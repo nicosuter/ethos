@@ -69,9 +69,6 @@ importers:
       nuxt-open-fetch:
         specifier: ^0.13.8
         version: 0.13.8(magicast@0.5.1)(typescript@5.9.3)
-      openapi-typescript:
-        specifier: ^7.10.1
-        version: 7.10.1(typescript@5.9.3)
       playwright-core:
         specifier: ^1.58.1
         version: 1.58.1

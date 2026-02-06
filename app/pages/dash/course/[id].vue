@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import type { Course } from "~/models/Course";
+
 const route = useRoute();
 const id = String(route.params.id ?? "");
 
-const { data: course, pending } = await useAsyncData<Course | null>(
+const { data: course, pending } = await useAsyncData<CourseDTO | null>(
 	`course-${id}`,
 	async () => {
 		const raw = coursesStorage.value?.courses?.[id];
-		return raw ? ({ id, ...raw } as Course) : null;
+		return raw ? ({ id, ...raw } as CourseDTO) : null;
 	},
 );
 
