@@ -1,44 +1,76 @@
-export const useVvzApi = () => {
-	const fetchCourseById = async (unitId: number) => {
+import type { CourseDTO, Lecturer } from "~/composables/useGlobalData";
+import { createCourse } from "~/models/Course";
+import type {
+	LecturerProfileResponse,
+	UnitLecturersResponse,
+	UnitResponse,
+} from "~~/schema/vvz";
+
+export function useVvzApi() {
+	async function fetchCourse(unitId: number): Promise<CourseDTO | null> {
 		try {
-			const data = await $fetch<any>(`/vvzProxy/api/v1/unit/${unitId}/get`);
+			const data = await $fetch<UnitResponse>(
+				`/vvzProxy/api/v1/unit/${unitId}/get`,
+			);
 			// Handle potential array or single object response
 			const courseData = Array.isArray(data) ? data[0] : data;
-			return courseData || null;
+			return (courseData as CourseDTO) || null;
 		} catch (e) {
 			console.error("Failed to fetch course data", e);
 			return null;
 		}
-	};
+	}
 
-	const fetchLecturers = async (id: number) => {
+	async function fetchLecturer(id: number): Promise<Lecturer | null> {
 		try {
-			return await $fetch<never>(`/vvzProxy/api/v1/lecturer/get/${id}`);
-		} catch {
-			return id;
+			const data = await $fetch<LecturerProfileResponse>(
+				`/vvzProxy/api/v1/lecturer/get/${id}`,
+			);
+			const l = Array.isArray(data) ? data[0] : data;
+			if (!l) return null;
+			return {
+				firstname: l.name,
+				lastname: l.surname,
+				title: l.title,
+			};
+		} catch (e) {
+			console.error("Failed to fetch lecturer", e);
+			return null;
 		}
-	};
+	}
 
-	const fetchLecturersByUnitId = async (unitId: number) => {
+	async function fetchLecturersByUnitId(unitId: number): Promise<Lecturer[]> {
 		try {
-			const lecturerRefs = await $fetch<any[]>(
+			const lecturerRefs = await $fetch<UnitLecturersResponse>(
 				`/vvzProxy/api/v1/unit/${unitId}/lecturers`,
 			);
 
 			if (!Array.isArray(lecturerRefs)) return [];
 
-			// Fetch details for each lecturer
-			return await Promise.all(
-				lecturerRefs.map(async (l: number) => fetchLecturers(l)),
+			// Fetch details for each lecturer and filter out nulls
+			const results = await Promise.all(
+				lecturerRefs.map(async (l: number) => fetchLecturer(l)),
 			);
+			return results.filter((x): x is Lecturer => x !== null);
 		} catch (err) {
 			console.error("Failed to fetch lecturers", err);
 			return [];
 		}
-	};
+	}
+
+	/**
+	 * Convenience: returns a CourseModel instance wrapping the fetched DTO.
+	 * This should be used client-side (models with methods are not safe to serialize over SSR).
+	 */
+	async function fetchCourseModel(unitId: number) {
+		const dto = await fetchCourse(unitId);
+		if (!dto) return null;
+		return createCourse(dto, useVvzApi());
+	}
 
 	return {
-		fetchCourseById,
+		fetchCourseById: fetchCourse,
 		fetchLecturersByUnitId,
+		fetchCourseModel,
 	};
-};
+}

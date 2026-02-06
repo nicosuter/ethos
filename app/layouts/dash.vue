@@ -12,7 +12,7 @@ const items: NavigationMenuItem[] = [
 		label: "Courses",
 		icon: "i-heroicons-book-open-20-solid",
 		children: [
-			...Object.entries(coursesStorage.value?.courses).map(([id, course]) => ({
+			...Object.entries(coursesStorage.value.courses).map(([id, course]) => ({
 				label: course.title,
 				to: `/dash/course/${id}`,
 			})),

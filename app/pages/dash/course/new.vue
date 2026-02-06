@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const router = useRouter();
 const { search } = useCourseSearch();
-const { fetchCourseById, fetchLecturersByUnitId } = useVvzApi();
+const { fetchCourseModel, fetchLecturersByUnitId } = useVvzApi();
 
 const form = ref({
 	id: null as null | string | number,
@@ -9,13 +9,7 @@ const form = ref({
 	description: "",
 });
 
-type SearchedCourse = {
-	id: number;
-	title: string;
-	[key: string]: any;
-};
-
-const selectedCourse = ref<SearchedCourse | null>(null);
+const selectedCourse = ref<CourseDTO | null>(null);
 
 watch(selectedCourse, (val) => {
 	if (val?.id) {
@@ -39,22 +33,20 @@ watch(
 		if (selectedCourse.value?.id === unitId) return;
 
 		try {
-			const courseData = await fetchCourseById(unitId);
+			const course = await fetchCourseModel(unitId);
+			if (!course) {
+				console.warn(`No course found for ID ${unitId}`);
+				return;
+			}
 
-			if (courseData?.title) {
-				form.value.title = courseData.title_english ?? courseData.title;
-
-				// Fetch lecturers separately
-				const lecturers = await fetchLecturersByUnitId(unitId);
-
-				console.log(courseData);
-
+			if (course.title) {
+				form.value.title = course.title ?? course.title;
 				selectedCourse.value = {
+					...course.toDTO(),
 					id: unitId,
-					title: courseData.title_english ?? courseData.title,
-					description: courseData.objective_english ?? courseData.objective,
-					...courseData,
-					lecturers,
+					title: course.title,
+					description: course.description,
+					lecturers: await course.getLecturers(),
 				};
 			}
 		} catch (e) {
@@ -74,25 +66,18 @@ async function handleSubmit() {
 	// Fallback for Title in explicit-id mode
 	const title = hasTitle ? form.value.title || "Unknown Course" : id;
 
-	const description = selectedCourse.value?.description || "";
-
-	const newCourse: Course = {
-		id,
-		title,
-		description,
-	};
-
 	const existing = coursesStorage.value?.courses ?? {};
 	const next = {
 		...existing,
 		[id]: {
-			title: newCourse.title,
-			description: newCourse.description,
+			...selectedCourse.value,
+			title: title,
+			description: selectedCourse.value?.description,
 		},
 	};
 	coursesStorage.value = { ...(coursesStorage.value ?? {}), courses: next };
 
-	await router.push(`/dash/course/${newCourse.id}`);
+	await router.push(`/dash/course/${selectedCourse.value?.id}`);
 }
 </script>
 
@@ -110,7 +95,7 @@ async function handleSubmit() {
           <div class="font-medium text-white">{{ selectedCourse.title }}</div>
           <div v-if="selectedCourse.lecturers" class="text-zinc-400 mt-1">
           <span v-for="(l, i) in selectedCourse.lecturers" :key="i">
-            {{ l.name }} {{ l.surname.toUpperCase() }}<span v-if="i < selectedCourse.lecturers.length - 1">, </span>
+            {{ l.firstname }} {{ l.lastname.toUpperCase() }}<span v-if="i < selectedCourse.lecturers.length - 1">, </span>
           </span>
           </div>
           <div v-if="selectedCourse.description" class="text-zinc-400 mt-2">{{ selectedCourse.description }}</div>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
 const id = String(route.params.id ?? "");
-const links = getLinksForCourse(id);
 
 const { data: course, pending } = await useAsyncData<Course | null>(
 	`course-${id}`,
@@ -10,6 +9,22 @@ const { data: course, pending } = await useAsyncData<Course | null>(
 		return raw ? ({ id, ...raw } as Course) : null;
 	},
 );
+
+import { computed } from "vue";
+
+// Compute any remaining links that are not handled explicitly (moodle, examRepo)
+const extraLinks = computed(() => {
+	const links = (course as any)?.value?.links ?? {};
+	return Object.entries(links).filter(
+		([k]) => !["moodle", "examRepo"].includes(k),
+	);
+});
+
+function prettyKey(key: string) {
+	return String(key)
+		.replace(/[-_]/g, " ")
+		.replace(/\b\w/g, (m) => m.toUpperCase());
+}
 </script>
 
 <template>
@@ -24,28 +39,39 @@ const { data: course, pending } = await useAsyncData<Course | null>(
     <div v-else class="prose lg:prose-lg prose-invert max-w-none">
       <header class="mb-6">
         <h2 class="text-3xl font-bold mt-0! mb-2!">{{ course.title }}</h2>
+        <div class="flex items-center gap-4 text-sm text-zinc-400 mb-2">
+          <div>
+            <span class="font-medium text-zinc-300">Course ID:</span>
+            <span class="ml-1">{{ course.id }} <span v-if="course.code">({{ course.code }})</span></span>
+          </div>
+          <div v-if="course.lecturers">
+            <span class="font-medium text-zinc-300">Lecturer<span v-if="course.lecturers.length > 1">s</span>:</span>
+            <span class="ml-1">
+              <span v-for="(l, idx) in course.lecturers" :key="idx">
+                {{ l.title ? l.title + ' ' : '' }}{{ l.firstname }} {{ l.lastname.toUpperCase() }}<span
+                v-if="idx < course.lecturers.length - 1">, </span>
+              </span>
+            </span>
+          </div>
+        </div>
+
         <h6>{{ course.description }}</h6>
-        <div v-if="links" class="flex gap-2 mt-4">
-          <UButton
-            v-if="links.moodle"
-            :to="links.moodle"
-            target="_blank"
-            icon="i-heroicons-academic-cap"
-            color="neutral"
-            size="sm"
-          >
-            Moodle
-          </UButton>
-          <UButton
-            v-if="links.examRepo"
-            :to="links.examRepo"
-            target="_blank"
-            icon="i-heroicons-document-text"
-            color="neutral"
-            size="sm"
-          >
-            Exam Repo
-          </UButton>
+        <div v-if="course.links" class="flex gap-2 mt-4">
+          <NuxtLink v-if="course.links.moodle" :to="course.links.moodle" target="_blank">
+            <UButton icon="i-heroicons-academic-cap" color="neutral" size="sm">
+              Moodle
+            </UButton>
+          </NuxtLink>
+          <NuxtLink target="_blank" external :to="course.links.examRepo" v-if="course.links.examRepo">
+            <UButton icon="i-heroicons-document-text" color="neutral" size="sm">
+              Exam Repo
+            </UButton>
+          </NuxtLink>
+          <NuxtLink v-for="([key, url], idx) in extraLinks" :key="key" :to="url as string" target="_blank" rel="noopener" external>
+            <UButton icon="i-heroicons-link-20-solid" color="neutral" size="sm">
+              {{ prettyKey(key) }}
+            </UButton>
+          </NuxtLink>
         </div>
       </header>
     </div>

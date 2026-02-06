@@ -1,9 +1,17 @@
 import { type Ref, readonly, ref } from "vue";
 
-export type Course = {
+export type Lecturer = {
+	firstname: string;
+	lastname: string;
+	title?: string;
+};
+
+export type CourseDTO = {
 	id: string;
+	code?: string;
 	title: string;
 	description?: string;
+	lecturers?: Lecturer[];
 	links?: Record<string, string>;
 };
 
@@ -16,11 +24,11 @@ export type EventItem = {
 	location?: string;
 };
 
-type FetcherResult = { courses?: Course[]; events?: EventItem[] };
+type FetcherResult = { courses?: CourseDTO[]; events?: EventItem[] };
 
 function createGlobalData() {
 	const mode = ref<"mock" | "live">("mock");
-	const courses: Ref<Course[]> = ref([]);
+	const courses: Ref<CourseDTO[]> = ref([]);
 	const events: Ref<EventItem[]> = ref([]);
 	const liveFetcher = ref<null | (() => Promise<FetcherResult>)>(null);
 
@@ -100,10 +108,10 @@ function createGlobalData() {
 		return events.value.filter((e) => e.courseId === courseId);
 	}
 
-	function addCourse(course: Course) {
+	function addCourse(course: CourseDTO) {
 		// simple uniqueness guard — if ID exists, append suffix
 		const exists = courses.value.find((c) => c.id === course.id);
-		let newCourse = { ...course } as Course;
+		let newCourse = { ...course } as CourseDTO;
 		if (exists) {
 			let i = 2;
 			while (courses.value.find((c) => c.id === `${course.id}-${i}`)) i++;
