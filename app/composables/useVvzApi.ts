@@ -17,6 +17,7 @@ export function useVvzApi() {
 			return data
 				? ({
 						...data,
+						title: data.title_english ?? data.title,
 						id: data.id.toString(),
 						code: data.number,
 						description: data.abstract_english ?? data.abstract,
